@@ -1,0 +1,291 @@
+local scriptCode = [====[
+-- Services
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local MarketPlaceService = game:GetService("MarketplaceService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+
+-- Get Full Game Name Dynamically
+local gameName = "Server Tool"
+local success, info = pcall(function()
+	return MarketPlaceService:GetProductInfo(game.PlaceId)
+end)
+if success and info and info.Name then
+	gameName = info.Name
+end
+
+-- Create ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "VoidrushServerToolV2"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main Frame (Dark Gray - 150x150)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 150, 0, 150)
+MainFrame.Position = UDim2.new(0.15, 0, 0.25, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(0, 150, 255) -- Light Blue
+MainFrame.Active = true
+MainFrame.Parent = ScreenGui
+
+-- Title Bar Frame (Light Blue)
+local TitleBar = Instance.new("TextButton") 
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 28)
+TitleBar.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+TitleBar.BorderSizePixel = 0
+TitleBar.Text = ""
+TitleBar.AutoButtonColor = false
+TitleBar.Parent = MainFrame
+
+-- Moving/Scrolling Title Frame Setup
+local TitleClipFrame = Instance.new("Frame")
+TitleClipFrame.Size = UDim2.new(0.55, 0, 1, 0)
+TitleClipFrame.Position = UDim2.new(0, 6, 0, 0)
+TitleClipFrame.BackgroundTransparency = 1
+TitleClipFrame.ClipsDescendants = true
+TitleClipFrame.Parent = TitleBar
+
+local TitleText = Instance.new("TextLabel")
+TitleText.Size = UDim2.new(2, 0, 1, 0) -- Extra width for movement text
+TitleText.Position = UDim2.new(0, 0, 0, 0)
+TitleText.BackgroundTransparency = 1
+TitleText.Text = gameName .. "   "
+TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.Font = Enum.Font.SourceSansBold
+TitleText.TextSize = 13
+TitleText.Parent = TitleClipFrame
+
+-- Make the Title Move (Scrolling Text Loop)
+task.spawn(function()
+	while task.wait(0.05) do
+		if TitleText.TextBounds.X > TitleClipFrame.AbsoluteSize.X then
+			TitleText.Position = TitleText.Position - UDim2.new(0, 1, 0, 0)
+			if math.abs(TitleText.Position.X.Offset) >= TitleText.TextBounds.X / 2 then
+				TitleText.Position = UDim2.new(0, 0, 0, 0)
+			end
+		end
+	end
+end)
+
+-- Close Button (X)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(1, -28, 0, 0)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.TextSize = 14
+CloseBtn.Parent = TitleBar
+
+-- Minimize Button (-)
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 28, 0, 28)
+MinBtn.Position = UDim2.new(1, -56, 0, 0)
+MinBtn.BackgroundTransparency = 1
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinBtn.Font = Enum.Font.SourceSansBold
+MinBtn.TextSize = 16
+MinBtn.Parent = TitleBar
+
+-- Small Minimize Floating Open Button (Hidden by default)
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Name = "OpenBtn"
+OpenBtn.Size = UDim2.new(0, 35, 0, 35)
+OpenBtn.Position = MainFrame.Position
+OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+OpenBtn.BorderSizePixel = 2
+OpenBtn.BorderColor3 = Color3.fromRGB(45, 45, 45)
+OpenBtn.Text = "⚡"
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.Font = Enum.Font.SourceSansBold
+OpenBtn.TextSize = 18
+OpenBtn.Visible = false
+OpenBtn.Parent = ScreenGui
+
+-- Round the Open button corners nicely
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = OpenBtn
+
+-- Content Window Container
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, 0, 1, -28)
+ContentFrame.Position = UDim2.new(0, 0, 0, 28)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+-- Copy Button
+local CopyBtn = Instance.new("TextButton")
+CopyBtn.Size = UDim2.new(0.9, 0, 0, 25)
+CopyBtn.Position = UDim2.new(0.05, 0, 0.06, 0)
+CopyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+CopyBtn.BorderColor3 = Color3.fromRGB(0, 150, 255)
+CopyBtn.Text = "Copy ID"
+CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CopyBtn.Font = Enum.Font.SourceSans
+CopyBtn.TextSize = 13
+CopyBtn.Parent = ContentFrame
+
+-- Input Box
+local InputBox = Instance.new("TextBox")
+InputBox.Size = UDim2.new(0.9, 0, 0, 25)
+InputBox.Position = UDim2.new(0.05, 0, 0.34, 0)
+InputBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+InputBox.BorderColor3 = Color3.fromRGB(0, 150, 255)
+InputBox.PlaceholderText = "Paste ID..."
+InputBox.Text = ""
+InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+InputBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+InputBox.Font = Enum.Font.SourceSans
+InputBox.TextSize = 12
+InputBox.ClearTextOnFocus = false
+InputBox.Parent = ContentFrame
+
+-- Join Button
+local JoinBtn = Instance.new("TextButton")
+JoinBtn.Size = UDim2.new(0.9, 0, 0, 25)
+JoinBtn.Position = UDim2.new(0.05, 0, 0.62, 0)
+JoinBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+JoinBtn.BorderSizePixel = 0
+JoinBtn.Text = "Join Server"
+JoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+JoinBtn.Font = Enum.Font.SourceSansBold
+JoinBtn.TextSize = 13
+JoinBtn.Parent = ContentFrame
+
+-- Voidrush Credit Watermark
+local CreditText = Instance.new("TextLabel")
+CreditText.Size = UDim2.new(1, 0, 0, 12)
+CreditText.Position = UDim2.new(0, 0, 0.88, 0)
+CreditText.BackgroundTransparency = 1
+CreditText.Text = "Made-By-Voidrush"
+CreditText.TextColor3 = Color3.fromRGB(200, 200, 200)
+CreditText.TextTransparency = 0.75
+CreditText.Font = Enum.Font.SourceSansItalic
+CreditText.TextSize = 10
+CreditText.Parent = ContentFrame
+
+--------------------------------------------------------------------------
+-- SYSTEM LOGIC (TOUCH DRAG, MINIMIZE TO SMALL BUTTON, TELEPORT)
+--------------------------------------------------------------------------
+
+-- Smooth Mobile Drag Implementation
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+local function HandleDrag(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		MainFrame.Position = newPos
+		OpenBtn.Position = newPos -- Syncs minimized button tracker location
+	end
+end
+
+TitleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = MainFrame.Position
+	end
+end)
+
+TitleBar.InputChanged:Connect(HandleDrag)
+TitleBar.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = false
+	end
+end)
+
+-- Minimize to small Floating Button
+MinBtn.MouseButton1Click:Connect(function()
+	MainFrame.Visible = false
+	OpenBtn.Position = MainFrame.Position
+	OpenBtn.Visible = true
+end)
+
+OpenBtn.MouseButton1Click:Connect(function()
+	OpenBtn.Visible = false
+	MainFrame.Visible = true
+end)
+
+-- Close Button
+CloseBtn.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
+
+-- Copy Logic 
+CopyBtn.MouseButton1Click:Connect(function()
+	local serverId = tostring(game.JobId)
+	if serverId and serverId ~= "" then
+		local success = pcall(function()
+			if setclipboard then setclipboard(serverId) end
+		end)
+		if success and setclipboard then
+			CopyBtn.Text = "Copied!"
+		else
+			InputBox.Text = serverId
+			CopyBtn.Text = "Pasted Below!"
+		end
+		task.wait(1.5)
+		CopyBtn.Text = "Copy ID"
+	else
+		CopyBtn.Text = "No ID (Studio)"
+		task.wait(1.5)
+		CopyBtn.Text = "Copy ID"
+	end
+end)
+
+-- Robust Cross-Instance Server Join Teleport Logic
+JoinBtn.MouseButton1Click:Connect(function()
+	local targetId = InputBox.Text:gsub("%s+", "")
+	if targetId and targetId ~= "" then
+		JoinBtn.Text = "Teleporting..."
+		
+		-- Explicitly firing Teleport to targeted server instance
+		local success, err = pcall(function()
+			TeleportService:TeleportToPlaceInstance(game.PlaceId, targetId, player)
+		end)
+		
+		if not success then
+			JoinBtn.Text = "Fail/Expired"
+			warn("Teleport Issue: " .. tostring(err))
+			task.wait(1.5)
+			JoinBtn.Text = "Join Server"
+		end
+	else
+		JoinBtn.Text = "Enter ID First"
+		task.wait(1.5)
+		JoinBtn.Text = "Join Server"
+	end
+end)
+]====]
+
+-- 1. Execute the tool loop immediately for the current session
+local runScript, err = loadstring(scriptCode)
+if runScript then
+    task.spawn(runScript)
+else
+    warn("Failed to load script: " .. tostring(err))
+end
+
+-- 2. Watch for teleports and queue execution for the next server
+local queueTeleport = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
+if queueTeleport then
+    game:GetService("Players").LocalPlayer.OnTeleport:Connect(function(teleportState)
+        if teleportState == Enum.TeleportState.InProgress then
+            queueTeleport(scriptCode)
+        end
+    end)
+end
